@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from app.db.session import get_db
 from app.db.crud.user import get_user
+from app.db.crud.sellers import get_seller
 from app.security import SECRET_KEY, ALGORITHM
 
 # Используем OAuth2 Password Bearer (токен передается в заголовке Authorization)
@@ -32,3 +33,24 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise credentials_exception
 
     return user  # Возвращаем объект пользователя (User)
+
+
+def get_current_seller(db: Session, token: str):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        seller_id: int = payload.get("seller_id")
+        if seller_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    seller = get_seller(db, seller_id)
+    if seller is None:
+        raise credentials_exception
+    return seller

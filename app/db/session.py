@@ -3,6 +3,39 @@ from sqlalchemy.orm import sessionmaker
 from clickhouse_sqlalchemy import make_session, get_declarative_base
 from app.config import DATABASE_URL
 import logging
+import clickhouse_connect
+from fastapi import Depends
+
+def parse_database_url(url: str):
+
+    scheme, rest = url.split("://")
+    user_pass, host_port_db = rest.split("@")
+    user, password = user_pass.split(":")
+    host, port_db = host_port_db.split(":")
+    port, database = port_db.split("/")
+    return {
+        "user": user,
+        "password": password,
+        "host": host,
+        "port": int(port),
+        "database": database
+    }
+
+# Получаем параметры подключения из DATABASE_URL
+config = parse_database_url(DATABASE_URL)
+
+# Создаем асинхронного клиента для ClickHouse
+async_client = clickhouse_connect.get_client(
+    host=config['host'],
+    port=config['port'],
+    username=config['user'],
+    password=config['password'],
+    database=config['database']
+)
+
+# Функция для получения асинхронного соединения
+async def get_async_db():
+    return async_client
 
 logger = logging.getLogger(__name__)
 

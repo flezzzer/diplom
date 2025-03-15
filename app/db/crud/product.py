@@ -19,6 +19,9 @@ def get_product(db: Session, product_id: int):
 def get_products(db: Session, skip: int = 0, limit: int = 100):
     return db.query(Product).offset(skip).limit(limit).all()
 
+def get_products_by_seller(db:Session, seller_id: int):
+    return db.query(Product).filter(Product.seller_id == seller_id)
+
 # Обновление товара
 def update_product(db: Session, product_id: int, product: ProductUpdate):
     db_product = db.query(Product).filter(Product.id == product_id).first()
