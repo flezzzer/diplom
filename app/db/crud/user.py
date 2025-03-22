@@ -6,10 +6,10 @@ from app.security import hash_password, verify_password
 # Создание пользователя
 def create_user(db: Session, user: UserRegister):
     hashed_password = hash_password(user.password)
-    db_user = User(username=user.username, email=user.email, full_name=user.full_name, hashed_password=hashed_password)
+    db_user = User(username=user.username, email=user.email, hashed_password=hashed_password)
     db.add(db_user)
     db.commit()
-    db.refresh(db_user)
+    # db.refresh(db_user)
     return db_user
 
 # Получение пользователя по id

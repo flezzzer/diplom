@@ -6,8 +6,8 @@ import logging
 import clickhouse_connect
 from fastapi import Depends
 
-def parse_database_url(url: str):
 
+def parse_database_url(url: str):
     scheme, rest = url.split("://")
     user_pass, host_port_db = rest.split("@")
     user, password = user_pass.split(":")
@@ -21,6 +21,7 @@ def parse_database_url(url: str):
         "database": database
     }
 
+
 # Получаем параметры подключения из DATABASE_URL
 config = parse_database_url(DATABASE_URL)
 
@@ -33,29 +34,43 @@ async_client = clickhouse_connect.get_client(
     database=config['database']
 )
 
+
 # Функция для получения асинхронного соединения
-async def get_async_db():
+async def async_session():
     return async_client
+
 
 logger = logging.getLogger(__name__)
 
 Base = get_declarative_base()
 
+# Создаем подключение к базе данных через SQLAlchemy
 engine = create_engine(DATABASE_URL, echo=True)
 
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-session = make_session(engine)
 
+# Функция для инициализации базы данных с учётом SET
 def init_db():
     """Инициализация базы данных и создание всех таблиц."""
     try:
-        Base.metadata.create_all(bind=engine)
+        # Выполняем команду SET через execute на асинхронном клиенте
+
+
+        # Создание всех таблиц в базе данных
         # Base.metadata.drop_all(bind=engine)
+        async_client.command("SET allow_create_index_without_type=1;")
+        Base.metadata.create_all(bind=engine)
         logger.info("База данных инициализирована.")
     except Exception as e:
         logger.error(f"Ошибка инициализации базы данных: {str(e)}")
         raise
 
+
+# Создаем сессии для работы с базой данных
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+session = make_session(engine)
+
+
+# Функция для получения сессии для работы с базой данных
 def get_db():
     """Функция для получения сессии для работы с базой данных."""
     db = SessionLocal()

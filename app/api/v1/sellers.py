@@ -3,12 +3,28 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.schemas.products import ProductCreate, ProductUpdate
 from app.db.crud.product import create_product, get_product, get_products_by_seller, update_product, delete_product
-from app.db.crud.order import get_orders_by_seller, update_order_status
+from app.db.crud.order import update_order_status
 from app.db.session import get_db
-from app.db.models import Seller
+from app.db.models import Seller, Order
+from app.api.v1.statistics import notify_seller
+
 
 router = APIRouter(prefix="/sellers", tags=["Sellers"])
 
+@router.put("/{seller_id}/orders/{order_id}/status")
+async def update_order_status_of_seller(seller_id: int, order_id: int, status: str, db: Session = Depends(get_db)):
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order or order.seller_id != seller_id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this order")
+
+    updated_order = update_order_status(db, order_id, status)
+    if not updated_order:
+        raise HTTPException(status_code=404, detail="Order not found")
+
+    # Отправляем WebSocket-уведомление
+    await notify_seller(seller_id, f"Заказ {order_id} теперь {status}")
+
+    return updated_order
 
 # Создать новый товар для продавца
 @router.post("/{seller_id}/products", response_model=ProductCreate)

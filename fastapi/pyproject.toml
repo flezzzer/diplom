@@ -17,6 +17,12 @@ passlib = "^1.7.4"
 python-jose = {extras = ["cryptography"], version = "^3.3.0"}
 pydantic = {extras = ["email"], version = "^2.10.6"}
 clickhouse-connect = "^0.8.15"
+aioredis = "^2.0.1"
+websockets = "^15.0.1"
+react = "^4.3.0"
+redis = "^5.2.1"
+alembic = "^1.15.1"
+bcrypt = "^4.3.0"
 
 
 [build-system]
