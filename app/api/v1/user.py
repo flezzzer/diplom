@@ -9,4 +9,4 @@ router = APIRouter(prefix="/users", tags=["Users"])
 
 @router.get("/me", response_model=UserBase)
 def read_user_me(db: Session = Depends(get_db), current_user: dict = Depends(get_current_user)):
-    return get_user(db, current_user["id"])
+    return get_user(db, current_user.id)

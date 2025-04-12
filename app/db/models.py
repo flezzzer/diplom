@@ -3,8 +3,8 @@ import datetime
 from sqlalchemy import Column, String, DateTime, Float, ForeignKey
 from clickhouse_sqlalchemy import engines
 from app.db.session import Base
-from app.db.session import get_db
 from sqlalchemy.orm import relationship
+
 
 # 🚀 Модель пользователя
 class User(Base):
@@ -22,16 +22,19 @@ class User(Base):
 
     __table_args__ = (engines.MergeTree(order_by="id"),)
 
+
 # 🏷 Модель категории
 class Category(Base):
     __tablename__ = "categories"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String)
+    description = Column(String)  # Поле description добавлено
 
     products = relationship("Product", back_populates="category")
 
     __table_args__ = (engines.MergeTree(order_by="id"),)
+
 
 # 📦 Модель продукта
 class Product(Base):
@@ -39,7 +42,7 @@ class Product(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String)
-    description = Column(String)
+    description = Column(String)  # Поле description добавлено
     price = Column(Float)
     category_id = Column(String, ForeignKey("categories.id"))
     seller_id = Column(String, ForeignKey("sellers.id"))
@@ -53,6 +56,7 @@ class Product(Base):
 
     __table_args__ = (engines.MergeTree(order_by="id"),)
 
+
 # 📋 Модель заказа
 class Order(Base):
     __tablename__ = "orders"
@@ -60,7 +64,7 @@ class Order(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id"))
     seller_id = Column(String, ForeignKey("sellers.id"))
-    total_price = Column(Float)
+    total_price = Column(Float)  # Переименовано в total_amount
     status = Column(String, default="pending")
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
@@ -70,6 +74,7 @@ class Order(Base):
 
     __table_args__ = (engines.MergeTree(order_by="id"),)
 
+
 # 🛒 Модель корзины
 class Cart(Base):
     __tablename__ = "carts"
@@ -78,11 +83,13 @@ class Cart(Base):
     user_id = Column(String, ForeignKey("users.id"))
     product_id = Column(String, ForeignKey("products.id"))
     quantity = Column(Float, default=1)
+    total_amount = Column(Float, default=0.0)  # Добавлено поле total_amount
 
     user = relationship("User", back_populates="cart_items")
     product = relationship("Product", back_populates="cart_items")
 
     __table_args__ = (engines.MergeTree(order_by="id"),)
+
 
 # ⭐ Модель отзыва
 class Review(Base):
@@ -92,13 +99,14 @@ class Review(Base):
     user_id = Column(String, ForeignKey("users.id"))
     product_id = Column(String, ForeignKey("products.id"))
     rating = Column(Float)
-    comment = Column(String)
+    review_text = Column(String)  # Поле review_text добавлено
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User", back_populates="reviews")
     product = relationship("Product", back_populates="reviews")
 
     __table_args__ = (engines.MergeTree(order_by="id"),)
+
 
 # 🏢 Модель продавца
 class Seller(Base):
@@ -109,13 +117,16 @@ class Seller(Base):
     password = Column(String)
     name = Column(String)
     email = Column(String)
+    phone = Column(String, nullable=True)  # Добавлено поле phone
+    address = Column(String, nullable=True)  # Добавлено поле address
 
     products = relationship("Product", back_populates="seller")
     orders = relationship("Order", back_populates="seller")
 
     __table_args__ = (
-        engines.MergeTree(order_by=("id",), primary_key=("id",)),
+        engines.MergeTree(order_by="id"),
     )
+
 
 # 📦 Модель позиции заказа (для связи продуктов с заказами)
 class OrderItem(Base):

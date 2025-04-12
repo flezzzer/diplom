@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
+import uuid
 
 # Схема для создания нового продавца
 class SellerCreate(BaseModel):
@@ -7,6 +8,15 @@ class SellerCreate(BaseModel):
     email: EmailStr
     phone: Optional[str] = None
     address: Optional[str] = None
+    password: str
+
+    class Config:
+        orm_mode = True
+
+# Схема для логина продавца
+class SellerLogin(BaseModel):
+    email: EmailStr
+    password: str
 
     class Config:
         orm_mode = True
@@ -23,7 +33,7 @@ class SellerUpdate(BaseModel):
 
 # Схема для отображения информации о продавце
 class SellerOut(SellerCreate):
-    id: int
+    id: uuid.UUID  # UUID заменяем на тип uuid.UUID для точности
 
     class Config:
         orm_mode = True

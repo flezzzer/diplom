@@ -35,7 +35,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user  # Возвращаем объект пользователя (User)
 
 
-def get_current_seller(db: Session, token: str):
+# Функция для получения текущего продавца
+def get_current_seller(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -43,14 +44,17 @@ def get_current_seller(db: Session, token: str):
     )
 
     try:
+        # Декодируем JWT-токен
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        seller_id: int = payload.get("seller_id")
+        seller_id: int = payload.get("id")
         if seller_id is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
+    # Получаем продавца из базы
     seller = get_seller(db, seller_id)
     if seller is None:
         raise credentials_exception
-    return seller
+
+    return seller  # Возвращаем объект продавца (Seller)

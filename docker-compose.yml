@@ -12,7 +12,7 @@ services:
       CLICKHOUSE_USER: default
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
     volumes:
-      - clickhouse_data:/var/lib/clickhouse
+      - clickhouse_data:/var/lib/clickhouse  # Хранение данных ClickHouse в томе
 
   fastapi:
     build: ./fastapi
@@ -23,6 +23,7 @@ services:
       DATABASE_URL: "clickhouse://default:@clickhouse:8123/default"
     depends_on:
       - clickhouse
+
   redis:
     image: "redis:latest"
     container_name: "redis_cache"
@@ -30,4 +31,4 @@ services:
       - "6379:6379"
 
 volumes:
-  clickhouse_data:
+  clickhouse_data:  # Тома данных ClickHouse

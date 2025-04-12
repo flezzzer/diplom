@@ -29,3 +29,10 @@ class OrderInDB(OrderBase):
 
 class OrderOut(OrderInDB):
     pass
+
+
+class OrderStatusUpdate(BaseModel):
+    order_id: int
+    status: str
+    message: str
+

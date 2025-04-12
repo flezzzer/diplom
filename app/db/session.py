@@ -25,7 +25,18 @@ def parse_database_url(url: str):
 # Получаем параметры подключения из DATABASE_URL
 config = parse_database_url(DATABASE_URL)
 
-# Создаем асинхронного клиента для ClickHouse
+bootstrap_client = clickhouse_connect.get_client(
+    host=config['host'],
+    port=config['port'],
+    username=config['user'],
+    password=config['password'],
+    # Без database=
+)
+
+# 2. Создаём базу, если нужно
+bootstrap_client.command("CREATE DATABASE IF NOT EXISTS default")
+
+# 3. Потом уже создаём нормальный клиент с базой
 async_client = clickhouse_connect.get_client(
     host=config['host'],
     port=config['port'],
@@ -54,7 +65,7 @@ def init_db():
     try:
         # Выполняем команду SET через execute на асинхронном клиенте
 
-
+        async_client.command("CREATE DATABASE IF NOT EXISTS default")
         # Создание всех таблиц в базе данных
         # Base.metadata.drop_all(bind=engine)
         async_client.command("SET allow_create_index_without_type=1;")
