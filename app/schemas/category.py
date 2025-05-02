@@ -17,7 +17,7 @@ class CategoryUpdate(CategoryBase):
     description: Optional[str] = None
 
 class CategoryInDB(CategoryBase):
-    id: int
+    id: str
     created_at: datetime
 
     class Config:

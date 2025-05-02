@@ -68,6 +68,8 @@ def init_db():
         async_client.command("CREATE DATABASE IF NOT EXISTS default")
         # Создание всех таблиц в базе данных
         # Base.metadata.drop_all(bind=engine)
+        # async_client.command("DROP TABLE IF EXISTS cart_products")
+        # async_client.command("DROP TABLE IF EXISTS orders")
         async_client.command("SET allow_create_index_without_type=1;")
         Base.metadata.create_all(bind=engine)
         logger.info("База данных инициализирована.")

@@ -1,6 +1,6 @@
 import uuid
 import datetime
-from sqlalchemy import Column, String, DateTime, Float, ForeignKey
+from sqlalchemy import Column, String, DateTime, Float, ForeignKey, Integer
 from clickhouse_sqlalchemy import engines
 from app.db.session import Base
 from sqlalchemy.orm import relationship
@@ -30,7 +30,7 @@ class Category(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String)
     description = Column(String)  # Поле description добавлено
-
+    seller_id = Column(String, ForeignKey("sellers.id"))
     products = relationship("Product", back_populates="category")
 
     __table_args__ = (engines.MergeTree(order_by="id"),)
@@ -50,9 +50,10 @@ class Product(Base):
 
     category = relationship("Category", back_populates="products")
     seller = relationship("Seller", back_populates="products")
-    cart_items = relationship("Cart", back_populates="product")
+    # cart_items = relationship("Cart", back_populates="product")
     reviews = relationship("Review", back_populates="product")
     order_items = relationship("OrderItem", back_populates="product")
+    cart_products = relationship("CartProduct", back_populates="product")
 
     __table_args__ = (engines.MergeTree(order_by="id"),)
 
@@ -81,14 +82,11 @@ class Cart(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id"))
-    product_id = Column(String, ForeignKey("products.id"))
-    quantity = Column(Float, default=1)
-    total_amount = Column(Float, default=0.0)  # Добавлено поле total_amount
-
     user = relationship("User", back_populates="cart_items")
-    product = relationship("Product", back_populates="cart_items")
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow)
 
-    __table_args__ = (engines.MergeTree(order_by="id"),)
+    # Связь с товарами через промежуточную таблицу CartProduct
+    products = relationship("CartProduct", back_populates="cart")
 
 
 # ⭐ Модель отзыва
@@ -132,7 +130,7 @@ class Seller(Base):
 class OrderItem(Base):
     __tablename__ = "order_items"
 
-    id = Column(String, primary_key=True)
+    id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
     order_id = Column(String, ForeignKey("orders.id"))
     product_id = Column(String, ForeignKey("products.id"))
     quantity = Column(Float)
@@ -142,3 +140,16 @@ class OrderItem(Base):
     product = relationship("Product", back_populates="order_items")
 
     __table_args__ = (engines.MergeTree(order_by="id"),)
+
+
+class CartProduct(Base):
+    __tablename__ = "cart_products"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    cart_id = Column(String, ForeignKey("carts.id"))
+    product_id = Column(String, ForeignKey("products.id"))
+    quantity = Column(Float, default=1)
+    price = Column(Float, nullable=False)
+
+    cart = relationship("Cart", back_populates="products")
+    product = relationship("Product", back_populates="cart_products")

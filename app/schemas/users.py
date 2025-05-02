@@ -17,7 +17,7 @@ class UserUpdate(UserBase):
     is_active: Optional[bool] = True
 
 class UserInDB(UserBase):
-    id: int
+    id: str
     created_at: datetime
 
     class Config:

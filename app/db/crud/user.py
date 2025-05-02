@@ -13,7 +13,7 @@ def create_user(db: Session, user: UserRegister):
     return db_user
 
 # Получение пользователя по id
-def get_user(db: Session, user_id: int):
+def get_user(db: Session, user_id: str):
     return db.query(User).filter(User.id == user_id).first()
 
 # Получение пользователя по email
@@ -25,7 +25,7 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(User).offset(skip).limit(limit).all()
 
 # Обновление пользователя
-def update_user(db: Session, user_id: int, user: UserUpdate):
+def update_user(db: Session, user_id: str, user: UserUpdate):
     db_user = db.query(User).filter(User.id == user_id).first()
     if db_user:
         if user.username:
@@ -41,7 +41,7 @@ def update_user(db: Session, user_id: int, user: UserUpdate):
     return db_user
 
 # Удаление пользователя
-def delete_user(db: Session, user_id: int):
+def delete_user(db: Session, user_id: str):
     db_user = db.query(User).filter(User.id == user_id).first()
     if db_user:
         db.delete(db_user)

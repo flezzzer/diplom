@@ -7,7 +7,7 @@ class ProductBase(BaseModel):
     description: Optional[str] = None
     price: float
     stock: Optional[int] = 0
-    category_id: int
+    category_id: str
 
 class ProductCreate(ProductBase):
     pass
@@ -17,10 +17,10 @@ class ProductUpdate(ProductBase):
     description: Optional[str] = None
     price: Optional[float] = None
     stock: Optional[int] = None
-    category_id: Optional[int] = None
+    category_id: Optional[str] = None
 
 class ProductInDB(ProductBase):
-    id: int
+    id: str
     created_at: datetime
 
     class Config:

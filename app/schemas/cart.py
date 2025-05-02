@@ -1,19 +1,18 @@
 from pydantic import BaseModel
-from typing import List, Optional
 from datetime import datetime
 
 class CartBase(BaseModel):
-    total_amount: float
+    pass  # Больше ничего здесь не нужно
 
 class CartCreate(CartBase):
     pass
 
 class CartUpdate(CartBase):
-    total_amount: Optional[float] = None
+    pass  # Можно расширить, если будет нужно
 
-class CartInDB(CartBase):
-    id: int
-    user_id: int
+class CartInDB(BaseModel):
+    id: str
+    user_id: str
     created_at: datetime
     updated_at: datetime
 

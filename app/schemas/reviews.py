@@ -14,9 +14,9 @@ class ReviewUpdate(ReviewBase):
     review_text: Optional[str] = None
 
 class ReviewInDB(ReviewBase):
-    id: int
-    user_id: int
-    product_id: int
+    id: str
+    user_id: str
+    product_id: str
     created_at: datetime
 
     class Config:

@@ -9,18 +9,19 @@ class OrderStatus(str, Enum):
     CANCELLED = "cancelled"
 
 class OrderBase(BaseModel):
-    status: OrderStatus
-    total_amount: float
+    status: Optional[OrderStatus] = OrderStatus.PENDING
+    total_amount: Optional[float] = None  # Вычисляется на основе корзины
 
-class OrderCreate(OrderBase):
+class OrderCreate(BaseModel):
+    # Поля явно от пользователя не требуются
     pass
 
-class OrderUpdate(OrderBase):
+class OrderUpdate(BaseModel):
     status: Optional[OrderStatus] = None
 
 class OrderInDB(OrderBase):
-    id: int
-    user_id: int
+    id: str
+    user_id: str
     created_at: datetime
     updated_at: datetime
 
@@ -30,9 +31,7 @@ class OrderInDB(OrderBase):
 class OrderOut(OrderInDB):
     pass
 
-
 class OrderStatusUpdate(BaseModel):
-    order_id: int
-    status: str
+    order_id: str
+    status: OrderStatus
     message: str
-

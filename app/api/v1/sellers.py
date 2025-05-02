@@ -43,7 +43,7 @@ def get_current_seller_from_token(db: Session, token: str = Depends(get_current_
 
 # Обновить статус заказа продавца
 @router.put("/{seller_id}/orders/{order_id}/status", response_model=OrderStatusUpdate)
-async def update_order_status_of_seller(seller_id: int, order_id: int, status: str, db: Session = Depends(get_db)):
+async def update_order_status_of_seller(seller_id: str, order_id: str, status: str, db: Session = Depends(get_db)):
     order = db.query(Order).filter(Order.id == order_id).first()
 
     if not order or order.seller_id != seller_id:

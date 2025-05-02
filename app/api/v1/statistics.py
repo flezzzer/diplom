@@ -14,11 +14,11 @@ from typing import Dict
 router = APIRouter()
 
 # Подключенные клиенты (seller_id -> WebSocket)
-active_connections: Dict[int, WebSocket] = {}
+active_connections: Dict[str, WebSocket] = {}
 
 
 @router.websocket("/ws/{seller_id}")
-async def websocket_endpoint(websocket: WebSocket, seller_id: int):
+async def websocket_endpoint(websocket: WebSocket, seller_id: str):
     await websocket.accept()
     active_connections[seller_id] = websocket  # Запоминаем подключение
 
@@ -30,7 +30,7 @@ async def websocket_endpoint(websocket: WebSocket, seller_id: int):
 
 
 # Функция для отправки уведомлений
-async def notify_seller(seller_id: int, message: str):
+async def notify_seller(seller_id: str, message: str):
     if seller_id in active_connections:
         await active_connections[seller_id].send_text(message)
 
@@ -38,7 +38,7 @@ router = APIRouter(prefix="/sellers", tags=["Sellers"])
 
 
 @router.get("/{seller_id}/statistics")
-async def get_seller_statistics(seller_id: int):
+async def get_seller_statistics(seller_id: str):
     cache_key = f"seller_stats:{seller_id}"
 
     # Проверяем, есть ли статистика в кэше
