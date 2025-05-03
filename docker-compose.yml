@@ -21,14 +21,30 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: "clickhouse://default:@clickhouse:8123/default"
+      REDIS_HOST: "redis_cache"  # Указываем контейнер Redis как хост
+      REDIS_PORT: "6379"         # Порт Redis
+      RABBITMQ_HOST: "rabbitmq"  # Указываем хост для RabbitMQ
+      RABBITMQ_PORT: "5672"      # Порт RabbitMQ
     depends_on:
       - clickhouse
+      - redis
+      - rabbitmq  # Зависимость от RabbitMQ
 
   redis:
     image: "redis:latest"
     container_name: "redis_cache"
     ports:
       - "6379:6379"
+
+  rabbitmq:
+    image: "rabbitmq:management"
+    container_name: "rabbitmq"
+    ports:
+      - "5672:5672"  # Порт для работы с очередями
+      - "15672:15672" # Порт для доступа к веб-менеджменту RabbitMQ (HTTP UI)
+    environment:
+      RABBITMQ_DEFAULT_USER: user  # Устанавливаем имя пользователя
+      RABBITMQ_DEFAULT_PASS: password  # Устанавливаем пароль
 
 volumes:
   clickhouse_data:  # Тома данных ClickHouse

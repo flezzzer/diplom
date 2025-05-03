@@ -12,7 +12,7 @@ from app.db.session import get_db
 from app.security import create_access_token
 from app.core.auth import get_current_seller
 from app.db.models import Seller, Order, Category
-from app.api.v1.statistics import notify_seller
+from app.api.v1.notify import notify_seller
 
 router = APIRouter(prefix="/sellers", tags=["Sellers"])
 

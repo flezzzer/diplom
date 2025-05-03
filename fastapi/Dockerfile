@@ -19,10 +19,8 @@ COPY app/frontend/test-app /app/frontend/test-app
 # Устанавливаем Node.js и npm
 RUN apt-get update && apt-get install -y nodejs npm
 
-# Меняем рабочую директорию на фронтенд
-WORKDIR /app/frontend/test-app
-
 # Удаляем node_modules и package-lock.json перед установкой
+WORKDIR /app/frontend/test-app
 RUN rm -rf node_modules package-lock.json
 
 # Устанавливаем зависимости фронтенда
@@ -33,6 +31,9 @@ RUN npm run build
 
 # Возвращаемся в основную папку
 WORKDIR /app
+
+# Устанавливаем библиотеку для работы с RabbitMQ
+RUN pip install aio-pika
 
 # Запускаем бекенд и фронтенд
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000 & serve -s /app/frontend/test-app/build -l 3000"]

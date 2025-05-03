@@ -64,13 +64,11 @@ class Order(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id"))
-    seller_id = Column(String, ForeignKey("sellers.id"))
     total_price = Column(Float)  # Переименовано в total_amount
     status = Column(String, default="pending")
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User", back_populates="orders")
-    seller = relationship("Seller", back_populates="orders")
     order_items = relationship("OrderItem", back_populates="order")
 
     __table_args__ = (engines.MergeTree(order_by="id"),)
@@ -119,7 +117,6 @@ class Seller(Base):
     address = Column(String, nullable=True)  # Добавлено поле address
 
     products = relationship("Product", back_populates="seller")
-    orders = relationship("Order", back_populates="seller")
 
     __table_args__ = (
         engines.MergeTree(order_by="id"),

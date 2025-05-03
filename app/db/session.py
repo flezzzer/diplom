@@ -4,9 +4,10 @@ from clickhouse_sqlalchemy import make_session, get_declarative_base
 from app.config import DATABASE_URL
 import logging
 import clickhouse_connect
+from contextlib import contextmanager
 from fastapi import Depends
 
-
+# Парсим строку подключения к базе данных
 def parse_database_url(url: str):
     scheme, rest = url.split("://")
     user_pass, host_port_db = rest.split("@")
@@ -21,23 +22,23 @@ def parse_database_url(url: str):
         "database": database
     }
 
-
 # Получаем параметры подключения из DATABASE_URL
 config = parse_database_url(DATABASE_URL)
 
+# Инициализируем синхронный клиент ClickHouse
 bootstrap_client = clickhouse_connect.get_client(
     host=config['host'],
     port=config['port'],
     username=config['user'],
     password=config['password'],
-    # Без database=
+    # Без database= для начальной инициализации
 )
 
 # 2. Создаём базу, если нужно
 bootstrap_client.command("CREATE DATABASE IF NOT EXISTS default")
 
-# 3. Потом уже создаём нормальный клиент с базой
-async_client = clickhouse_connect.get_client(
+# Создаем подключение для основной базы данных (ClickHouse)
+sync_client = clickhouse_connect.get_client(
     host=config['host'],
     port=config['port'],
     username=config['user'],
@@ -45,49 +46,46 @@ async_client = clickhouse_connect.get_client(
     database=config['database']
 )
 
-
-# Функция для получения асинхронного соединения
-async def async_session():
-    return async_client
-
-
-logger = logging.getLogger(__name__)
-
-Base = get_declarative_base()
-
-# Создаем подключение к базе данных через SQLAlchemy
+# Создаем движок SQLAlchemy для синхронной работы
 engine = create_engine(DATABASE_URL, echo=True)
 
+# Создаем сессию SQLAlchemy для синхронных операций
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Функция для инициализации базы данных с учётом SET
+# Сессия для работы с ClickHouse
+session = make_session(engine)
+
+# Определяем Base для SQLAlchemy
+Base = get_declarative_base()
+
+# Инициализация базы данных
 def init_db():
     """Инициализация базы данных и создание всех таблиц."""
     try:
-        # Выполняем команду SET через execute на асинхронном клиенте
-
-        async_client.command("CREATE DATABASE IF NOT EXISTS default")
-        # Создание всех таблиц в базе данных
-        # Base.metadata.drop_all(bind=engine)
-        # async_client.command("DROP TABLE IF EXISTS cart_products")
-        # async_client.command("DROP TABLE IF EXISTS orders")
-        async_client.command("SET allow_create_index_without_type=1;")
+        # Создание базы, если её нет
+        bootstrap_client.command("CREATE DATABASE IF NOT EXISTS default")
+        # Выполняем команды для настройки базы
+        bootstrap_client.command("SET allow_create_index_without_type=1;")
+        # Создание всех таблиц
         Base.metadata.create_all(bind=engine)
-        logger.info("База данных инициализирована.")
+        logging.info("База данных инициализирована.")
     except Exception as e:
-        logger.error(f"Ошибка инициализации базы данных: {str(e)}")
+        logging.error(f"Ошибка инициализации базы данных: {str(e)}")
         raise
 
-
-# Создаем сессии для работы с базой данных
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-session = make_session(engine)
-
-
-# Функция для получения сессии для работы с базой данных
+# Функция для получения сессии SQLAlchemy
 def get_db():
-    """Функция для получения сессии для работы с базой данных."""
+    """Функция для получения синхронной сессии для работы с базой данных."""
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+# Функция для получения сессии для ClickHouse
+def get_clickhouse_session():
+    """Функция для получения сессии для работы с ClickHouse."""
+    try:
+        yield session
+    finally:
+        pass  # Пока не нужно закрывать сессию для clickhouse_connect

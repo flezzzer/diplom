@@ -2,21 +2,22 @@ from sqlalchemy.orm import Session
 # from app.db.crud.order import
 from fastapi import HTTPException
 from diplom.app.db.crud.cart import get_last_cart_by_user
-
+from uuid import uuid4
 from app.db.models import Order, Product, Cart, CartProduct, OrderItem
 from app.schemas.orders import OrderCreate, OrderUpdate
 from sqlalchemy import and_
 
 # Создание заказа
-def create_order_from_cart(db: Session, user_id: str):
+def create_order_from_cart(db: Session, user_id: str, order_data: OrderCreate):
     cart = get_last_cart_by_user(db, user_id)
     if not cart:
         raise HTTPException(status_code=404, detail="No cart found for the user")
 
     # Подсчитываем общую сумму из корзины
     total_amount = sum(item.price * item.quantity for item in cart.products)
-
+    order_id = str(uuid4())
     new_order = Order(
+        id=order_id,
         user_id=user_id,
         total_price=total_amount,
         status="pending"  # или order_data.status, если передаётся
@@ -28,7 +29,7 @@ def create_order_from_cart(db: Session, user_id: str):
 
     for cart_product in cart.products:
         order_item = OrderItem(
-            order_id=new_order.id,
+            order_id=order_id,
             product_id=cart_product.product_id,
             quantity=cart_product.quantity,
             price=cart_product.price
@@ -36,6 +37,9 @@ def create_order_from_cart(db: Session, user_id: str):
         db.add(order_item)
 
     db.commit()
+
+    for product in cart.products:
+        db.delete(product)
 
     db.delete(cart)
     db.commit()
