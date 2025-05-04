@@ -1,5 +1,6 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
+from uuid import UUID
 from datetime import datetime
 from enum import Enum
 
@@ -20,8 +21,8 @@ class OrderUpdate(BaseModel):
     status: Optional[OrderStatus] = None
 
 class OrderInDB(OrderBase):
-    id: str
-    user_id: str
+    id: UUID  # Используем UUID для id
+    user_id: UUID  # Используем UUID для user_id
     created_at: datetime
     updated_at: datetime
 
@@ -32,6 +33,6 @@ class OrderOut(OrderInDB):
     pass
 
 class OrderStatusUpdate(BaseModel):
-    order_id: str
+    order_id: UUID  # Используем UUID для order_id
     status: OrderStatus
     message: str

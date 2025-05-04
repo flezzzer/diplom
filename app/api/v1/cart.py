@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from datetime import datetime
+from sqlalchemy import select
 
-from app.schemas.cart import CartCreate
+from app.schemas.cart import CartCreate, CartOut
 from app.db.crud.cart import (
     get_cart,
     add_product_to_cart,
@@ -10,33 +11,32 @@ from app.db.crud.cart import (
     delete_cart,
     get_or_create_cart
 )
-from app.db.session import get_db
+from app.db.pg_session import get_pg_session
 from app.db.models import User, Product, Cart
 from app.core.auth import get_current_user
 from app.schemas.cart_product import CartProductCreate
 
 router = APIRouter(prefix="/cart", tags=["Cart"])
 
-
 @router.get("/", response_model=CartCreate)
-def read_cart(
-    db: Session = Depends(get_db),
+async def read_cart(
+    db: AsyncSession = Depends(get_pg_session),
     current_user: User = Depends(get_current_user)
 ):
-    return get_cart(db, current_user.id)
-
+    return await get_cart(db, current_user.id)
 
 @router.post("/")
-def add_product_to_cart_route(
+async def add_product_to_cart_route(
     cart_item: CartProductCreate,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_pg_session),
     current_user: User = Depends(get_current_user)
 ):
     # Получаем или создаём корзину
-    cart = get_or_create_cart(db, current_user.id)
+    cart = await get_or_create_cart(db, current_user.id)
 
     # Проверяем, существует ли товар
-    product = db.query(Product).filter(Product.id == cart_item.product_id).first()
+    product = await db.execute(select(Product).filter(Product.id == cart_item.product_id))
+    product = product.scalars().first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
@@ -46,9 +46,9 @@ def add_product_to_cart_route(
     # Обновляем updated_at вручную (если БД ClickHouse)
     cart.updated_at = datetime.utcnow()
     db.add(cart)
-    db.commit()
+    await db.commit()
 
-    return add_product_to_cart(
+    return await add_product_to_cart(
         db=db,
         user_id=current_user.id,
         cart_id=cart.id,
@@ -57,19 +57,17 @@ def add_product_to_cart_route(
         price=total_price
     )
 
-
 @router.delete("/{product_id}")
-def remove_product_from_cart(
+async def remove_product_from_cart(
     product_id: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_pg_session),
     current_user: User = Depends(get_current_user)
 ):
-    return remove_product_from_cart(db, user_id=current_user.id, product_id=product_id)
-
+    return await remove_product_from_cart(db, user_id=current_user.id, product_id=product_id)
 
 @router.delete("/")
-def clear_user_cart(
-    db: Session = Depends(get_db),
+async def clear_user_cart(
+    db: AsyncSession = Depends(get_pg_session),
     current_user: User = Depends(get_current_user)
 ):
-    return delete_cart(db, user_id=current_user.id)
+    return await delete_cart(db, user_id=current_user.id)

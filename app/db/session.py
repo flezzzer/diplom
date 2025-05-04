@@ -1,91 +1,193 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from clickhouse_sqlalchemy import make_session, get_declarative_base
-from app.config import DATABASE_URL
-import logging
 import clickhouse_connect
-from contextlib import contextmanager
-from fastapi import Depends
+import logging
+import os
 
-# Парсим строку подключения к базе данных
-def parse_database_url(url: str):
-    scheme, rest = url.split("://")
-    user_pass, host_port_db = rest.split("@")
-    user, password = user_pass.split(":")
-    host, port_db = host_port_db.split(":")
-    port, database = port_db.split("/")
-    return {
-        "user": user,
-        "password": password,
-        "host": host,
-        "port": int(port),
-        "database": database
-    }
+# Параметры подключения к ClickHouse из переменных окружения
+CLICKHOUSE_HOST = os.getenv("CLICKHOUSE_HOST", "localhost")
+CLICKHOUSE_PORT = os.getenv("CLICKHOUSE_PORT", "8123")
+CLICKHOUSE_USER = os.getenv("CLICKHOUSE_USER", "default")
+CLICKHOUSE_PASSWORD = os.getenv("CLICKHOUSE_PASSWORD", "")
+CLICKHOUSE_DATABASE = os.getenv("CLICKHOUSE_DATABASE", "default")
 
-# Получаем параметры подключения из DATABASE_URL
-config = parse_database_url(DATABASE_URL)
 
-# Инициализируем синхронный клиент ClickHouse
-bootstrap_client = clickhouse_connect.get_client(
-    host=config['host'],
-    port=config['port'],
-    username=config['user'],
-    password=config['password'],
-    # Без database= для начальной инициализации
-)
+# Функция для подключения к ClickHouse
+def get_clickhouse_client():
+    """
+    Возвращает клиент для работы с ClickHouse.
+    """
+    client = clickhouse_connect.get_client(
+        host=CLICKHOUSE_HOST,
+        port=CLICKHOUSE_PORT,
+        username=CLICKHOUSE_USER,
+        password=CLICKHOUSE_PASSWORD,
+        database=CLICKHOUSE_DATABASE
+    )
+    return client
 
-# 2. Создаём базу, если нужно
-bootstrap_client.command("CREATE DATABASE IF NOT EXISTS default")
 
-# Создаем подключение для основной базы данных (ClickHouse)
-sync_client = clickhouse_connect.get_client(
-    host=config['host'],
-    port=config['port'],
-    username=config['user'],
-    password=config['password'],
-    database=config['database']
-)
-
-# Создаем движок SQLAlchemy для синхронной работы
-engine = create_engine(DATABASE_URL, echo=True)
-
-# Создаем сессию SQLAlchemy для синхронных операций
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Сессия для работы с ClickHouse
-session = make_session(engine)
-
-# Определяем Base для SQLAlchemy
-Base = get_declarative_base()
-
-# Инициализация базы данных
+# Инициализация базы данных ClickHouse
 def init_db():
-    """Инициализация базы данных и создание всех таблиц."""
+    """
+    Инициализирует ClickHouse: создает базу данных и таблицы, если их нет.
+    """
     try:
-        # Создание базы, если её нет
-        bootstrap_client.command("CREATE DATABASE IF NOT EXISTS default")
-        # Выполняем команды для настройки базы
-        bootstrap_client.command("SET allow_create_index_without_type=1;")
-        # Создание всех таблиц
-        Base.metadata.create_all(bind=engine)
-        logging.info("База данных инициализирована.")
+        # Подключаемся к ClickHouse без указания базы данных для инициализации
+        client = clickhouse_connect.get_client(
+            host=CLICKHOUSE_HOST,
+            port=CLICKHOUSE_PORT,
+            username=CLICKHOUSE_USER,
+            password=CLICKHOUSE_PASSWORD
+        )
+
+        # Создаем базу данных, если её нет
+        client.command(f"CREATE DATABASE IF NOT EXISTS {CLICKHOUSE_DATABASE}")
+
+        # Пример создания таблиц с учетом твоей схемы
+
+        # Таблица cart_products
+        create_cart_products = """
+        CREATE TABLE IF NOT EXISTS cart_products (
+            id String,
+            cart_id String,
+            product_id String,
+            quantity Int32,
+            price Float32
+        ) ENGINE = MergeTree()
+        ORDER BY id
+        SETTINGS index_granularity = 8192;
+        """
+        client.command(create_cart_products)
+
+        # Таблица carts
+        create_carts = """
+        CREATE TABLE IF NOT EXISTS carts (
+            id String,
+            user_id String,
+            product_id String,
+            quantity Float32,
+            total_amount Float32,
+            updated_at DateTime DEFAULT now()
+        ) ENGINE = MergeTree()
+        ORDER BY id
+        SETTINGS index_granularity = 8192;
+        """
+        client.command(create_carts)
+
+        # Таблица categories
+        create_categories = """
+        CREATE TABLE IF NOT EXISTS categories (
+            id String,
+            name String,
+            description String,
+            seller_id String
+        ) ENGINE = MergeTree()
+        ORDER BY id
+        SETTINGS index_granularity = 8192;
+        """
+        client.command(create_categories)
+
+        # Таблица order_items
+        create_order_items = """
+        CREATE TABLE IF NOT EXISTS order_items (
+            id String,
+            order_id String,
+            product_id String,
+            quantity Float32,
+            price Float32
+        ) ENGINE = MergeTree()
+        ORDER BY id
+        SETTINGS index_granularity = 8192;
+        """
+        client.command(create_order_items)
+
+        # Таблица orders
+        create_orders = """
+        CREATE TABLE IF NOT EXISTS orders (
+            id String,
+            user_id String,
+            total_price Float32,
+            status String,
+            created_at DateTime
+        ) ENGINE = MergeTree()
+        ORDER BY id
+        SETTINGS index_granularity = 8192;
+        """
+        client.command(create_orders)
+
+        # Таблица products
+        create_products = """
+        CREATE TABLE IF NOT EXISTS products (
+            id String,
+            name String,
+            description String,
+            price Float32,
+            category_id String,
+            seller_id String,
+            created_at DateTime
+        ) ENGINE = MergeTree()
+        ORDER BY id
+        SETTINGS index_granularity = 8192;
+        """
+        client.command(create_products)
+
+        # Таблица reviews
+        create_reviews = """
+        CREATE TABLE IF NOT EXISTS reviews (
+            id String,
+            user_id String,
+            product_id String,
+            rating Float32,
+            review_text String,
+            created_at DateTime
+        ) ENGINE = MergeTree()
+        ORDER BY id
+        SETTINGS index_granularity = 8192;
+        """
+        client.command(create_reviews)
+
+        # Таблица sellers
+        create_sellers = """
+        CREATE TABLE IF NOT EXISTS sellers (
+            id String,
+            username String,
+            password String,
+            name String,
+            email String,
+            phone String,
+            address String
+        ) ENGINE = MergeTree()
+        ORDER BY id
+        SETTINGS index_granularity = 8192;
+        """
+        client.command(create_sellers)
+
+        # Таблица users
+        create_users = """
+        CREATE TABLE IF NOT EXISTS users (
+            id String,
+            username String,
+            email String,
+            hashed_password String,
+            created_at DateTime
+        ) ENGINE = MergeTree()
+        ORDER BY id
+        SETTINGS index_granularity = 8192;
+        """
+        client.command(create_users)
+
+        logging.info("ClickHouse база данных и таблицы успешно инициализированы.")
     except Exception as e:
-        logging.error(f"Ошибка инициализации базы данных: {str(e)}")
+        logging.error(f"Ошибка инициализации базы данных ClickHouse: {e}")
         raise
 
-# Функция для получения сессии SQLAlchemy
-def get_db():
-    """Функция для получения синхронной сессии для работы с базой данных."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
-# Функция для получения сессии для ClickHouse
+# Функция для получения сессии ClickHouse
 def get_clickhouse_session():
-    """Функция для получения сессии для работы с ClickHouse."""
+    """
+    Функция для получения синхронной сессии для работы с ClickHouse.
+    """
     try:
-        yield session
+        client = get_clickhouse_client()
+        yield client
     finally:
         pass  # Пока не нужно закрывать сессию для clickhouse_connect

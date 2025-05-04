@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from uuid import UUID
 from datetime import datetime
 
 class CategoryBase(BaseModel):
@@ -17,7 +18,7 @@ class CategoryUpdate(CategoryBase):
     description: Optional[str] = None
 
 class CategoryInDB(CategoryBase):
-    id: str
+    id: UUID  # Используем UUID для id
     created_at: datetime
 
     class Config:

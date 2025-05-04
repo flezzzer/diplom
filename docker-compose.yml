@@ -1,6 +1,19 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: marketplace
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   clickhouse:
     image: clickhouse/clickhouse-server:latest
     container_name: clickhouse
@@ -46,5 +59,19 @@ services:
       RABBITMQ_DEFAULT_USER: user  # Устанавливаем имя пользователя
       RABBITMQ_DEFAULT_PASS: password  # Устанавливаем пароль
 
+  celery:
+    build:
+      context: ./fastapi  # Путь к Dockerfile
+    container_name: celery
+    command: [ "celery", "-A", "app.db.celery_task", "worker", "--loglevel=info" ]
+    environment:
+      - CELERY_BROKER=redis://redis_cache:6379/0
+      - REDIS_HOST=redis_cache
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+      - postgres
+
 volumes:
-  clickhouse_data:  # Тома данных ClickHouse
+  clickhouse_data:
+  postgres_data:

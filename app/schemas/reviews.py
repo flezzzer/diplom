@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from uuid import UUID
 from datetime import datetime
 
 class ReviewBase(BaseModel):
@@ -14,9 +15,9 @@ class ReviewUpdate(ReviewBase):
     review_text: Optional[str] = None
 
 class ReviewInDB(ReviewBase):
-    id: str
-    user_id: str
-    product_id: str
+    id: UUID  # Используем UUID для id
+    user_id: UUID  # Используем UUID для user_id
+    product_id: UUID  # Используем UUID для product_id
     created_at: datetime
 
     class Config:
@@ -24,4 +25,3 @@ class ReviewInDB(ReviewBase):
 
 class ReviewOut(ReviewInDB):
     pass
-

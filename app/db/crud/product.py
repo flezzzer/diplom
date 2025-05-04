@@ -1,11 +1,11 @@
-# app/db/crud/product.py
-
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from fastapi import HTTPException
 from app.db.models import Product
 from app.schemas.products import ProductCreate, ProductUpdate
 
 # Создание нового продукта
-def create_product(db: Session, product: ProductCreate, seller_id: str):
+async def create_product(db: AsyncSession, product: ProductCreate, seller_id: str):
     db_product = Product(
         name=product.name,
         description=product.description,
@@ -14,21 +14,24 @@ def create_product(db: Session, product: ProductCreate, seller_id: str):
         seller_id=seller_id  # Привязка к продавцу
     )
     db.add(db_product)
-    db.commit()
-    db.refresh(db_product)
+    await db.commit()
+    await db.refresh(db_product)
     return db_product
 
 # Получение продукта по id
-def get_product(db: Session, product_id: str):
-    return db.query(Product).filter(Product.id == product_id).first()
+async def get_product(db: AsyncSession, product_id: str):
+    result = await db.execute(select(Product).filter(Product.id == product_id))
+    return result.scalars().first()
 
 # Получение всех продуктов
-def get_products(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(Product).offset(skip).limit(limit).all()
+async def get_products(db: AsyncSession, skip: int = 0, limit: int = 100):
+    result = await db.execute(select(Product).offset(skip).limit(limit))
+    return result.scalars().all()
 
 # Обновление данных продукта
-def update_product(db: Session, product_id: str, product: ProductUpdate, seller_id: str):
-    db_product = db.query(Product).filter(Product.id == product_id, Product.seller_id == seller_id).first()
+async def update_product(db: AsyncSession, product_id: str, product: ProductUpdate, seller_id: str):
+    result = await db.execute(select(Product).filter(Product.id == product_id, Product.seller_id == seller_id))
+    db_product = result.scalars().first()
     if db_product:
         if product.name:
             db_product.name = product.name
@@ -36,14 +39,15 @@ def update_product(db: Session, product_id: str, product: ProductUpdate, seller_
             db_product.description = product.description
         if product.price:
             db_product.price = product.price
-        db.commit()
-        db.refresh(db_product)
+        await db.commit()
+        await db.refresh(db_product)
     return db_product
 
 # Удаление продукта
-def delete_product(db: Session, product_id: str, seller_id: str):
-    db_product = db.query(Product).filter(Product.id == product_id, Product.seller_id == seller_id).first()
+async def delete_product(db: AsyncSession, product_id: str, seller_id: str):
+    result = await db.execute(select(Product).filter(Product.id == product_id, Product.seller_id == seller_id))
+    db_product = result.scalars().first()
     if db_product:
-        db.delete(db_product)
-        db.commit()
+        await db.delete(db_product)
+        await db.commit()
     return db_product

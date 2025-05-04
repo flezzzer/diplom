@@ -26,7 +26,13 @@ bcrypt = "^4.3.0"
 aiochclient = "^2.6.0"
 aiohttp = "^3.11.18"
 aiormq = "^6.8.1"
+asyncpg = "^0.30.0"
+celery = {extras = ["redis"], version = "^5.5.2"}
+psycopg2-binary = "^2.9.10"
 
+
+[tool.poetry.group.dev.dependencies]
+locust = "^2.36.2"
 
 [build-system]
 requires = ["poetry-core"]

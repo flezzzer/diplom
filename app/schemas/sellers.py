@@ -5,6 +5,7 @@ import uuid
 # Схема для создания нового продавца
 class SellerCreate(BaseModel):
     name: str
+    username: str
     email: EmailStr
     phone: Optional[str] = None
     address: Optional[str] = None

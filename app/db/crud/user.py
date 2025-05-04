@@ -1,32 +1,37 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 from app.db.models import User
 from app.schemas.users import UserRegister, UserUpdate
 from app.security import hash_password, verify_password
 
 # Создание пользователя
-def create_user(db: Session, user: UserRegister):
+async def create_user(db: AsyncSession, user: UserRegister):
     hashed_password = hash_password(user.password)
     db_user = User(username=user.username, email=user.email, hashed_password=hashed_password)
     db.add(db_user)
-    db.commit()
-    # db.refresh(db_user)
+    await db.commit()  # Асинхронный коммит
+    await db.refresh(db_user)  # Асинхронное обновление объекта
     return db_user
 
 # Получение пользователя по id
-def get_user(db: Session, user_id: str):
-    return db.query(User).filter(User.id == user_id).first()
+async def get_user(db: AsyncSession, user_id: str):
+    result = await db.execute(select(User).filter(User.id == user_id))
+    return result.scalars().first()
 
 # Получение пользователя по email
-def get_user_by_email(db: Session, email: str):
-    return db.query(User).filter(User.email == email).first()
+async def get_user_by_email(db: AsyncSession, email: str):
+    result = await db.execute(select(User).filter(User.email == email))
+    return result.scalars().first()
 
 # Получение всех пользователей
-def get_users(db: Session, skip: int = 0, limit: int = 100):
-    return db.query(User).offset(skip).limit(limit).all()
+async def get_users(db: AsyncSession, skip: int = 0, limit: int = 100):
+    result = await db.execute(select(User).offset(skip).limit(limit))
+    return result.scalars().all()
 
 # Обновление пользователя
-def update_user(db: Session, user_id: str, user: UserUpdate):
-    db_user = db.query(User).filter(User.id == user_id).first()
+async def update_user(db: AsyncSession, user_id: str, user: UserUpdate):
+    result = await db.execute(select(User).filter(User.id == user_id))
+    db_user = result.scalars().first()
     if db_user:
         if user.username:
             db_user.username = user.username
@@ -36,14 +41,15 @@ def update_user(db: Session, user_id: str, user: UserUpdate):
             db_user.full_name = user.full_name
         if user.is_active is not None:
             db_user.is_active = user.is_active
-        db.commit()
-        db.refresh(db_user)
+        await db.commit()  # Асинхронный коммит
+        await db.refresh(db_user)  # Асинхронное обновление объекта
     return db_user
 
 # Удаление пользователя
-def delete_user(db: Session, user_id: str):
-    db_user = db.query(User).filter(User.id == user_id).first()
+async def delete_user(db: AsyncSession, user_id: str):
+    result = await db.execute(select(User).filter(User.id == user_id))
+    db_user = result.scalars().first()
     if db_user:
-        db.delete(db_user)
-        db.commit()
+        await db.delete(db_user)
+        await db.commit()  # Асинхронный коммит
     return db_user

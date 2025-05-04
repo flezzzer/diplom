@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from uuid import UUID
 from datetime import datetime
 
 class ProductBase(BaseModel):
@@ -7,7 +8,7 @@ class ProductBase(BaseModel):
     description: Optional[str] = None
     price: float
     stock: Optional[int] = 0
-    category_id: str
+    category_id: UUID  # Используем UUID для category_id
 
 class ProductCreate(ProductBase):
     pass
@@ -17,10 +18,10 @@ class ProductUpdate(ProductBase):
     description: Optional[str] = None
     price: Optional[float] = None
     stock: Optional[int] = None
-    category_id: Optional[str] = None
+    category_id: Optional[UUID] = None  # Используем UUID для category_id
 
 class ProductInDB(ProductBase):
-    id: str
+    id: UUID  # Используем UUID для id
     created_at: datetime
 
     class Config:

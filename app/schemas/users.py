@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
+import uuid
 
 class UserBase(BaseModel):
     username: str
@@ -17,7 +18,7 @@ class UserUpdate(UserBase):
     is_active: Optional[bool] = True
 
 class UserInDB(UserBase):
-    id: str
+    id: uuid.UUID  # Используем UUID для ID
     created_at: datetime
 
     class Config:
@@ -30,11 +31,7 @@ class CategoryOut(UserInDB):
 class UserLogOut(UserBase):
     pass
 
-
 # Вход пользователя
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
-
-
-
