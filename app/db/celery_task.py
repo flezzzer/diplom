@@ -1,59 +1,105 @@
-from celery import Celery
 from datetime import datetime, timedelta
 from sqlalchemy.future import select
-from .session import get_clickhouse_client
+from .session import get_clickhouse_session
 from .pg_session import get_pg_session
 import logging
+# from app.db.session import get_pg_session, get_clickhouse_client
+from app.celery_app import celery
+import asyncio
+from sqlalchemy import text
+from asgiref.sync import sync_to_async
 
-# Создаем объект Celery
-app = Celery('tasks', broker='redis://localhost:6379/0')
+# Настройка логгера
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Задача для синхронизации данных из PostgreSQL в ClickHouse
-@app.task
+# Асинхронная задача для синхронизации данных между PostgreSQL и ClickHouse
+@celery.task
 def sync_postgres_to_clickhouse():
     """Задача для синхронизации данных между PostgreSQL и ClickHouse."""
-
     # Время последней синхронизации (например, 5 минут назад)
     last_sync_time = datetime.utcnow() - timedelta(minutes=5)
 
-    # Получаем сессию PostgreSQL (синхронно)
-    session = get_pg_session()  # сделаем синхронным
-    try:
-        # Получаем данные из PostgreSQL за последние 5 минут для всех таблиц
-        tables = [
-            'cart_products',
-            'carts',
-            'categories',
-            'order_items',
-            'orders',
-            'products',
-            'reviews',
-            'sellers',
-            'users'
-        ]
+    # Получаем асинхронную сессию PostgreSQL
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(sync_data(last_sync_time))
 
-        for table in tables:
-            logging.info(f"Обрабатываем таблицу {table}.")
 
-            # Запрос для получения данных за последние 5 минут
-            query = f"""
-            SELECT * FROM {table}
-            WHERE updated_at >= :last_sync_time
-            """
-            result = session.execute(query, {'last_sync_time': last_sync_time})
-            data = result.fetchall()
+from clickhouse_driver import Client
 
-            if data:
-                # Получаем клиент ClickHouse
-                clickhouse_client = get_clickhouse_client()
+from clickhouse_driver import Client
+import os
 
-                # Вставляем данные в ClickHouse
-                insert_query = f"INSERT INTO {table} VALUES"
-                clickhouse_client.execute(insert_query, data)
-                logging.info(f"Данные из таблицы {table} успешно вставлены в ClickHouse.")
+def get_clickhouse_client():
+    return Client(
+        host=os.getenv("CLICKHOUSE_HOST", "clickhouse"),
+        port=int(os.getenv("CLICKHOUSE_PORT", 9000)),
+        user=os.getenv("CLICKHOUSE_USER", "default"),
+        password=os.getenv("CLICKHOUSE_PASSWORD", ""),
+        database=os.getenv("CLICKHOUSE_DB", "default")
+    )
+
+
+from asyncpg.pgproto.pgproto import UUID as PG_UUID
+import uuid
+def clean_data(data):
+    cleaned = []
+    for row in data:
+        cleaned_row = {}
+        for column, value in row._mapping.items():
+            if value is None:
+                cleaned_row[column] = ''
+            elif isinstance(value, uuid.UUID):  # Если значение — это объект UUID
+                cleaned_row[column] = str(value)
+            elif column == 'price' or column == 'total_price':  # Если столбец "price"
+                cleaned_row[column] = float(value) if value is not None else 0.0
             else:
-                logging.info(f"Нет новых данных для таблицы {table}.")
+                cleaned_row[column] = value
+        cleaned.append(cleaned_row)
+    return cleaned
 
+
+
+async def sync_data(last_sync_time):
+    """Асинхронная функция для синхронизации данных с PostgreSQL в ClickHouse."""
+    try:
+        # Получаем сессию PostgreSQL через асинхронный контекстный менеджер
+        async for session in get_pg_session():  # используем async for
+            tables = [
+                'cart_products',
+                'carts',
+                'categories',
+                'order_items',
+                'orders',
+                'products',
+                'reviews',
+                'sellers',
+                'users'
+            ]
+
+            for table in tables:
+                logging.info(f"Обрабатываем таблицу {table}.")
+
+                # Запрос для получения данных за последние 5 минут
+                query = text(f"""
+                SELECT * FROM {table}
+                WHERE updated_at >= :last_sync_time
+                """)
+                result = await session.execute(query, {'last_sync_time': last_sync_time})
+                data = result.fetchall()
+
+                if data:
+                    # Получаем клиент ClickHouse
+                    clickhouse_client = get_clickhouse_client()
+
+                    # Вставляем данные в ClickHouse
+                    data = clean_data(data)
+
+                    insert_query = f"INSERT INTO {table} VALUES"
+                    clickhouse_client.execute(insert_query, data)
+                    logging.info(f"Данные из таблицы {table} успешно вставлены в ClickHouse.")
+                else:
+                    logging.info(f"Нет новых данных для таблицы {table}.")
     except Exception as e:
         logging.error(f"Ошибка синхронизации данных для PostgreSQL в ClickHouse: {e}")
         raise e
+

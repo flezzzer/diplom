@@ -4,9 +4,10 @@ import sqlalchemy
 import clickhouse_driver
 
 # Настройки подключения к базе данных ClickHouse
-DATABASE_URL = os.getenv("DATABASE_URL", "clickhouse://default:@localhost:8123/default")
+DATABASE_URL = os.getenv("DATABASE_URL", "clickhouse://default:@clickhouse:8123/default")
 
-DATABASE_URL_POSTGRES = os.getenv("DATABASE_URL_POSTGRES", "postgresql+asyncpg://postgres:postgres@localhost:5432/marketplace")
+# Используем имя контейнера PostgreSQL (в docker-compose.yml)
+DATABASE_URL_POSTGRES = os.getenv("DATABASE_URL_POSTGRES", "postgresql+asyncpg://postgres:postgres@postgres:5432/marketplace")
 
-redis = redis.from_url("redis://localhost", decode_responses=True)
-
+# Используем имя контейнера Redis (в docker-compose.yml)
+redis = redis.from_url("redis://redis_cache:6379", decode_responses=True)

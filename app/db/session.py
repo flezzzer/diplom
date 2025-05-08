@@ -3,7 +3,7 @@ import logging
 import os
 
 # Параметры подключения к ClickHouse из переменных окружения
-CLICKHOUSE_HOST = os.getenv("CLICKHOUSE_HOST", "localhost")
+CLICKHOUSE_HOST = os.getenv("CLICKHOUSE_HOST", "clickhouse")  # Заменил localhost на имя контейнера
 CLICKHOUSE_PORT = os.getenv("CLICKHOUSE_PORT", "8123")
 CLICKHOUSE_USER = os.getenv("CLICKHOUSE_USER", "default")
 CLICKHOUSE_PASSWORD = os.getenv("CLICKHOUSE_PASSWORD", "")
@@ -31,6 +31,9 @@ def init_db():
     Инициализирует ClickHouse: создает базу данных и таблицы, если их нет.
     """
     try:
+        import logging
+        import clickhouse_connect
+
         # Подключаемся к ClickHouse без указания базы данных для инициализации
         client = clickhouse_connect.get_client(
             host=CLICKHOUSE_HOST,
@@ -41,81 +44,35 @@ def init_db():
 
         # Создаем базу данных, если её нет
         client.command(f"CREATE DATABASE IF NOT EXISTS {CLICKHOUSE_DATABASE}")
+        client.command(f"USE {CLICKHOUSE_DATABASE}")
 
-        # Пример создания таблиц с учетом твоей схемы
-
-        # Таблица cart_products
-        create_cart_products = """
-        CREATE TABLE IF NOT EXISTS cart_products (
+        # Таблица users
+        client.command("""
+        CREATE TABLE IF NOT EXISTS users (
             id String,
-            cart_id String,
-            product_id String,
-            quantity Int32,
-            price Float32
+            username String,
+            email String,
+            hashed_password String,
+            created_at DateTime,
+            updated_at DateTime
         ) ENGINE = MergeTree()
-        ORDER BY id
-        SETTINGS index_granularity = 8192;
-        """
-        client.command(create_cart_products)
-
-        # Таблица carts
-        create_carts = """
-        CREATE TABLE IF NOT EXISTS carts (
-            id String,
-            user_id String,
-            product_id String,
-            quantity Float32,
-            total_amount Float32,
-            updated_at DateTime DEFAULT now()
-        ) ENGINE = MergeTree()
-        ORDER BY id
-        SETTINGS index_granularity = 8192;
-        """
-        client.command(create_carts)
+        ORDER BY id;
+        """)
 
         # Таблица categories
-        create_categories = """
+        client.command("""
         CREATE TABLE IF NOT EXISTS categories (
             id String,
             name String,
             description String,
-            seller_id String
+            seller_id String,
+            updated_at DateTime
         ) ENGINE = MergeTree()
-        ORDER BY id
-        SETTINGS index_granularity = 8192;
-        """
-        client.command(create_categories)
-
-        # Таблица order_items
-        create_order_items = """
-        CREATE TABLE IF NOT EXISTS order_items (
-            id String,
-            order_id String,
-            product_id String,
-            quantity Float32,
-            price Float32
-        ) ENGINE = MergeTree()
-        ORDER BY id
-        SETTINGS index_granularity = 8192;
-        """
-        client.command(create_order_items)
-
-        # Таблица orders
-        create_orders = """
-        CREATE TABLE IF NOT EXISTS orders (
-            id String,
-            user_id String,
-            total_price Float32,
-            status String,
-            created_at DateTime
-        ) ENGINE = MergeTree()
-        ORDER BY id
-        SETTINGS index_granularity = 8192;
-        """
-        client.command(create_orders)
+        ORDER BY id;
+        """)
 
         # Таблица products
-        create_products = """
+        client.command("""
         CREATE TABLE IF NOT EXISTS products (
             id String,
             name String,
@@ -123,30 +80,14 @@ def init_db():
             price Float32,
             category_id String,
             seller_id String,
-            created_at DateTime
+            created_at DateTime,
+            updated_at DateTime
         ) ENGINE = MergeTree()
-        ORDER BY id
-        SETTINGS index_granularity = 8192;
-        """
-        client.command(create_products)
-
-        # Таблица reviews
-        create_reviews = """
-        CREATE TABLE IF NOT EXISTS reviews (
-            id String,
-            user_id String,
-            product_id String,
-            rating Float32,
-            review_text String,
-            created_at DateTime
-        ) ENGINE = MergeTree()
-        ORDER BY id
-        SETTINGS index_granularity = 8192;
-        """
-        client.command(create_reviews)
+        ORDER BY id;
+        """)
 
         # Таблица sellers
-        create_sellers = """
+        client.command("""
         CREATE TABLE IF NOT EXISTS sellers (
             id String,
             username String,
@@ -154,31 +95,80 @@ def init_db():
             name String,
             email String,
             phone String,
-            address String
+            address String,
+            updated_at DateTime
         ) ENGINE = MergeTree()
-        ORDER BY id
-        SETTINGS index_granularity = 8192;
-        """
-        client.command(create_sellers)
+        ORDER BY id;
+        """)
 
-        # Таблица users
-        create_users = """
-        CREATE TABLE IF NOT EXISTS users (
+        # Таблица carts
+        client.command("""
+        CREATE TABLE IF NOT EXISTS carts (
             id String,
-            username String,
-            email String,
-            hashed_password String,
-            created_at DateTime
+            user_id String,
+            updated_at DateTime
         ) ENGINE = MergeTree()
-        ORDER BY id
-        SETTINGS index_granularity = 8192;
-        """
-        client.command(create_users)
+        ORDER BY id;
+        """)
+
+        # Таблица cart_products
+        client.command("""
+        CREATE TABLE IF NOT EXISTS cart_products (
+            id String,
+            cart_id String,
+            product_id String,
+            quantity Float32,
+            price Float32,
+            updated_at DateTime
+        ) ENGINE = MergeTree()
+        ORDER BY id;
+        """)
+
+        # Таблица orders
+        client.command("""
+        CREATE TABLE IF NOT EXISTS orders (
+            id String,
+            user_id String,
+            total_price Float32,
+            status String,
+            updated_at DateTime
+        ) ENGINE = MergeTree()
+        ORDER BY id;
+        """)
+
+        # Таблица order_items
+        client.command("""
+        CREATE TABLE IF NOT EXISTS order_items (
+            id String,
+            order_id String,
+            product_id String,
+            quantity Float32,
+            price Float32,
+            updated_at DateTime
+        ) ENGINE = MergeTree()
+        ORDER BY id;
+        """)
+
+        # Таблица reviews
+        client.command("""
+        CREATE TABLE IF NOT EXISTS reviews (
+            id String,
+            user_id String,
+            product_id String,
+            rating Float32,
+            review_text String,
+            created_at DateTime,
+            updated_at DateTime
+        ) ENGINE = MergeTree()
+        ORDER BY id;
+        """)
 
         logging.info("ClickHouse база данных и таблицы успешно инициализированы.")
+
     except Exception as e:
         logging.error(f"Ошибка инициализации базы данных ClickHouse: {e}")
         raise
+
 
 
 # Функция для получения сессии ClickHouse

@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 import asyncio
+import time
+import redis
 from app.api.v1 import user, product, order, reviews, cart, auth, category, sellers, statistics, notify
 from app.api.v1.notify import start_receiving_notifications
 from app.db.session import init_db as init_clickhouse
 from app.db.pg_session import init_db as init_pg
+from app.db.celery_task import sync_postgres_to_clickhouse  # Импорт задачи (она уже зарегистрирована через @celery.task)
 from fastapi.middleware.cors import CORSMiddleware
-from app.db.celery_task import sync_postgres_to_clickhouse
 
 app = FastAPI()
 
@@ -24,25 +26,35 @@ app.include_router(notify.router)
 
 @app.on_event("startup")
 async def startup_event():
-    # Инициализация PostgreSQL и ClickHouse
     await init_pg()
-    init_clickhouse()  # sync, оставляем без await
-
-    # Запуск фоновой задачи
+    init_clickhouse()
     app.state.task = asyncio.create_task(start_receiving_notifications())
-    sync_postgres_to_clickhouse.delay()
 
+    # Задержка 2 секунды перед отправкой задачи — даём Redis и Celery подняться
+    asyncio.create_task(delayed_sync())
+
+async def delayed_sync():
+    await asyncio.sleep(2)
+    try:
+        sync_postgres_to_clickhouse.delay()
+        print("Задача на синхронизацию отправлена.")
+    except Exception as e:
+        print(f"Ошибка при отправке задачи в Celery: {e}")
+
+
+    # Отправка задачи в очередь
+
+    # sync_postgres_to_clickhouse.delay()
 
 @app.on_event("shutdown")
 async def shutdown_event():
     app.state.task.cancel()
     await app.state.task
 
-
-# Настройка CORS
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # На проде лучше ограничить
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
