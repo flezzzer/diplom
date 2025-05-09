@@ -22,7 +22,7 @@ async def create_order_from_cart(db: AsyncSession, user_id: str, order_data: Ord
         user_id=user_id,
         total_price=total_amount,
         status="pending",
-        created_at=datetime.utcnow()
+        updated_at=datetime.utcnow()
         # или order_data.status, если передаётся
     )
 

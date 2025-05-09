@@ -30,6 +30,7 @@ asyncpg = "^0.30.0"
 celery = {extras = ["redis"], version = "^5.5.2"}
 psycopg2-binary = "^2.9.10"
 asgiref = "^3.8.1"
+locust = "^2.37.1"
 
 
 [tool.poetry.group.dev.dependencies]

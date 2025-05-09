@@ -157,7 +157,7 @@ async def get_order_statistics_by_date(seller_id: str) -> Dict[str, Dict[str, in
         async with get_clickhouse_client() as client:
             query = f"""
                 SELECT
-                    toStartOfDay(o.created_at) AS order_date,
+                    toStartOfDay(o.updated_at) AS order_date,
                     count(DISTINCT o.id) AS order_count,
                     sum(oi.price * oi.quantity) AS revenue
                 FROM orders o
@@ -178,3 +178,4 @@ async def get_order_statistics_by_date(seller_id: str) -> Dict[str, Dict[str, in
 
     query_key = f"order_statistics_by_date:{seller_id}"
     return await cache_query(query_key, query_func)
+

@@ -14,7 +14,6 @@ class CartUpdate(CartBase):
 class CartInDB(BaseModel):
     id: UUID  # Используем UUID вместо строки
     user_id: UUID  # Используем UUID для user_id
-    created_at: datetime
     updated_at: datetime
 
     class Config:
