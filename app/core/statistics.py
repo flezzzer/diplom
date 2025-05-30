@@ -6,20 +6,16 @@ from app.config import redis
 import hashlib
 import json
 
-# Функция для кеширования запросов
 async def cache_query(query_key: str, query_func, *args) -> dict:
     cached_data = await redis.get(query_key)
     if cached_data:
         return json.loads(cached_data)  # Возвращаем данные из кеша
 
-    # Если данные не найдены в кеше, выполняем запрос
     result = await query_func(*args)
 
-    # Кешируем результат в Redis
     await redis.set(query_key, json.dumps(result), ex=60)  # Данные будут храниться 60 секунд
     return result
 
-# Получить общее количество продуктов продавца
 async def get_total_products_count(seller_id: str) -> int:
     async def query_func():
         async with get_clickhouse_client() as client:
@@ -34,7 +30,6 @@ async def get_total_products_count(seller_id: str) -> int:
     query_key = f"total_products_count:{seller_id}"
     return await cache_query(query_key, query_func)
 
-# Получить общее количество заказов продавца
 async def get_total_orders_count(seller_id: str) -> int:
     async def query_func():
         async with get_clickhouse_client() as client:
@@ -50,7 +45,6 @@ async def get_total_orders_count(seller_id: str) -> int:
     query_key = f"total_orders_count:{seller_id}"
     return await cache_query(query_key, query_func)
 
-# Получить общий доход продавца
 async def get_total_revenue(seller_id: str) -> float:
     async def query_func():
         async with get_clickhouse_client() as client:
@@ -66,7 +60,6 @@ async def get_total_revenue(seller_id: str) -> float:
     query_key = f"total_revenue:{seller_id}"
     return await cache_query(query_key, query_func)
 
-# Получить статистику по статусу заказов
 async def get_order_status_count(seller_id: str) -> Dict[str, int]:
     async def query_func():
         async with get_clickhouse_client() as client:
@@ -87,7 +80,6 @@ async def get_order_status_count(seller_id: str) -> Dict[str, int]:
     query_key = f"order_status_count:{seller_id}"
     return await cache_query(query_key, query_func)
 
-# Получить статистику по категориям
 async def get_category_statistics(seller_id: str) -> Dict[str, Dict[str, int]]:
     async def query_func():
         async with get_clickhouse_client() as client:
@@ -117,7 +109,6 @@ async def get_category_statistics(seller_id: str) -> Dict[str, Dict[str, int]]:
     query_key = f"category_statistics:{seller_id}"
     return await cache_query(query_key, query_func)
 
-# Получить статистику по товарам
 async def get_product_statistics(seller_id: str) -> Dict[str, Dict[str, int]]:
     async def query_func():
         async with get_clickhouse_client() as client:
@@ -151,7 +142,6 @@ async def get_product_statistics(seller_id: str) -> Dict[str, Dict[str, int]]:
     query_key = f"product_statistics:{seller_id}"
     return await cache_query(query_key, query_func)
 
-# Получить статистику по датам заказов
 async def get_order_statistics_by_date(seller_id: str) -> Dict[str, Dict[str, int]]:
     async def query_func():
         async with get_clickhouse_client() as client:
@@ -178,4 +168,44 @@ async def get_order_statistics_by_date(seller_id: str) -> Dict[str, Dict[str, in
 
     query_key = f"order_statistics_by_date:{seller_id}"
     return await cache_query(query_key, query_func)
+
+async def get_total_product_views(seller_id: str) -> int:
+    async def query_func():
+        async with get_clickhouse_client() as client:
+            query = f"""
+                SELECT count(*) AS view_count
+                FROM product_views
+                WHERE seller_id = '{seller_id}'
+            """
+            row = await client.fetchrow(query)
+            return {"view_count": row["view_count"]}
+
+    query_key = f"total_product_views:{seller_id}"
+    result = await cache_query(query_key, query_func)
+    return result["view_count"]
+
+async def get_product_counts_by_date(seller_id: str) -> list:
+    async def query_func():
+        async with get_clickhouse_client() as client:
+            query = f"""
+                SELECT
+                    toDate(updated_at) AS date,
+                    count() AS product_count
+                FROM products
+                WHERE seller_id = '{seller_id}'
+                GROUP BY date
+                ORDER BY date
+            """
+            rows = await client.fetch(query)
+            return [
+                {
+                    "date": str(row["date"]),
+                    "product_count": row["product_count"]
+                }
+                for row in rows
+            ]
+
+    query_key = f"product_counts_by_date:{seller_id}"
+    return await cache_query(query_key, query_func)
+
 

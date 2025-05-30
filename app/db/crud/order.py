@@ -8,13 +8,11 @@ from app.db.models import Order, Product, Cart, CartProduct, OrderItem
 from app.schemas.orders import OrderCreate, OrderUpdate
 from app.db.crud.cart import get_last_cart_by_user
 
-# Создание заказа из корзины
 async def create_order_from_cart(db: AsyncSession, user_id: str, order_data: OrderCreate):
     cart = await get_last_cart_by_user(db, user_id)
     if not cart:
         raise HTTPException(status_code=404, detail="No cart found for the user")
 
-    # Подсчитываем общую сумму из корзины
     total_amount = sum(item.price * item.quantity for item in cart.products)
     order_id = str(uuid4())
     new_order = Order(
@@ -23,7 +21,6 @@ async def create_order_from_cart(db: AsyncSession, user_id: str, order_data: Ord
         total_price=total_amount,
         status="pending",
         updated_at=datetime.utcnow()
-        # или order_data.status, если передаётся
     )
 
     db.add(new_order)
@@ -41,7 +38,6 @@ async def create_order_from_cart(db: AsyncSession, user_id: str, order_data: Ord
 
     await db.commit()
 
-    # Удаляем продукты из корзины
     for product in cart.products:
         await db.delete(product)
 
@@ -50,17 +46,14 @@ async def create_order_from_cart(db: AsyncSession, user_id: str, order_data: Ord
 
     return new_order
 
-# Получение заказа по ID
 async def get_order_by_id(db: AsyncSession, order_id: str):
     result = await db.execute(select(Order).filter(Order.id == order_id))
     return result.scalars().first()
 
-# Получение всех заказов пользователя
 async def get_orders_by_user(db: AsyncSession, user_id: str):
     result = await db.execute(select(Order).filter(Order.user_id == user_id))
     return result.scalars().all()
 
-# Обновление статуса заказа
 async def update_order_status(db: AsyncSession, order_id: str, status: str):
     result = await db.execute(select(Order).filter(Order.id == order_id))
     db_order = result.scalars().first()
@@ -70,7 +63,6 @@ async def update_order_status(db: AsyncSession, order_id: str, status: str):
         await db.refresh(db_order)
     return db_order
 
-# Удаление заказа
 async def delete_order(db: AsyncSession, order_id: str):
     result = await db.execute(select(Order).filter(Order.id == order_id))
     db_order = result.scalars().first()

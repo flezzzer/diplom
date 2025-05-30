@@ -31,19 +31,15 @@ async def add_product_to_cart_route(
     db: AsyncSession = Depends(get_pg_session),
     current_user: User = Depends(get_current_user)
 ):
-    # Получаем или создаём корзину
     cart = await get_or_create_cart(db, current_user.id)
 
-    # Проверяем, существует ли товар
     product = await db.execute(select(Product).filter(Product.id == cart_item.product_id))
     product = product.scalars().first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
 
-    # Расчёт общей стоимости товара в корзине
     total_price = product.price * cart_item.quantity
 
-    # Обновляем updated_at вручную (если БД ClickHouse)
     cart.updated_at = datetime.utcnow()
     db.add(cart)
     await db.commit()

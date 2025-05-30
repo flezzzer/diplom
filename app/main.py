@@ -30,7 +30,6 @@ async def startup_event():
     init_clickhouse()
     app.state.task = asyncio.create_task(start_receiving_notifications())
 
-    # Задержка 2 секунды перед отправкой задачи — даём Redis и Celery подняться
     asyncio.create_task(delayed_sync())
 
 async def delayed_sync():
@@ -42,16 +41,12 @@ async def delayed_sync():
         print(f"Ошибка при отправке задачи в Celery: {e}")
 
 
-    # Отправка задачи в очередь
-
-    # sync_postgres_to_clickhouse.delay()
 
 @app.on_event("shutdown")
 async def shutdown_event():
     app.state.task.cancel()
     await app.state.task
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

@@ -75,7 +75,6 @@ async def add_product_to_cart(db: AsyncSession, user_id: str, cart_id: str, prod
         )
         await db.execute(stmt)
 
-    # Обновляем дату корзины
     await db.execute(
         update(Cart).where(Cart.id == cart_id).values({"updated_at": datetime.utcnow()})
     )
@@ -95,7 +94,6 @@ async def remove_product_from_cart(db: AsyncSession, user_id: str, product_id: s
     )
     await db.execute(stmt)
 
-    # Обновляем дату корзины
     await db.execute(
         update(Cart).where(Cart.id == cart.id).values({"updated_at": datetime.utcnow()})
     )

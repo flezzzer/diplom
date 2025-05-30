@@ -27,7 +27,7 @@ services:
 
   fastapi:
     build:
-      context: .  # Указываем корень проекта, так как Dockerfile теперь в корне
+      context: .
     container_name: fastapi
     ports:
       - "8000:8000"
@@ -61,7 +61,7 @@ services:
 
   celery:
     build:
-      context: .  # Корень, потому что Dockerfile в корне
+      context: .
     container_name: celery
     command: celery -A app.celery_app.celery worker --loglevel=info
     environment:

@@ -5,16 +5,16 @@ from typing import Optional
 # cart_product.py
 
 class CartProductCreate(BaseModel):
-    product_id: UUID  # Используем UUID для product_id
-    quantity: int  # добавь, если нужно
+    product_id: UUID
+    quantity: int
 
 class CartProductBase(BaseModel):
-    product_id: UUID  # Используем UUID для product_id
-    cart_id: UUID  # Используем UUID для cart_id
+    product_id: UUID
+    cart_id: UUID
     quantity: int
 
 class CartProductRead(CartProductBase):
-    id: UUID  # Используем UUID для id
+    id: UUID
 
     class Config:
         orm_mode = True

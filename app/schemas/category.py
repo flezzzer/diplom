@@ -18,7 +18,7 @@ class CategoryUpdate(CategoryBase):
     description: Optional[str] = None
 
 class CategoryInDB(CategoryBase):
-    id: UUID  # Используем UUID для id
+    id: UUID
     created_at: datetime
 
     class Config:

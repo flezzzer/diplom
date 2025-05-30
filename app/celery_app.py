@@ -32,12 +32,11 @@ celery = Celery(
     broker_transport_options={"visibility_timeout": 3600},
 )
 
-# Автоматически находит задачи в 'app.db.celery_task'
 celery.autodiscover_tasks(['app.db.celery_task'])
 
 celery.conf.beat_schedule = {
     "sync-every-5-minutes": {
-        "task": "app.db.celery_task.sync_postgres_to_clickhouse",  # Путь к задаче
+        "task": "app.db.celery_task.sync_postgres_to_clickhouse",
         "schedule": crontab(minute="*/5"),
     }
 }

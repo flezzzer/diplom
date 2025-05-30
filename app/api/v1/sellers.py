@@ -17,7 +17,6 @@ from app.api.v1.notify import notify_seller
 
 router = APIRouter(prefix="/sellers", tags=["Sellers"])
 
-# Регистрация продавца
 @router.post("/register", response_model=SellerOut)
 async def register(seller: SellerCreate, db: AsyncSession = Depends(get_pg_session)):  # Используем get_pg_session
     result = await db.execute(select(Seller).filter(Seller.email == seller.email))
@@ -27,7 +26,6 @@ async def register(seller: SellerCreate, db: AsyncSession = Depends(get_pg_sessi
     new_seller = await create_seller(db, seller)
     return new_seller
 
-# Логин продавца
 @router.post("/login")
 async def login(seller: SellerLogin, db: AsyncSession = Depends(get_pg_session)):  # Используем get_pg_session
     db_seller = await authenticate_seller(db, seller)
@@ -36,7 +34,6 @@ async def login(seller: SellerLogin, db: AsyncSession = Depends(get_pg_session))
     token = create_access_token(data={"id": str(db_seller.id), "email": db_seller.email})
     return {"access_token": token, "token_type": "bearer"}
 
-# Получить текущего авторизованного продавца
 async def get_current_seller_from_token(db: AsyncSession, token: str = Depends(get_current_seller)):
     result = await db.execute(select(Seller).filter(Seller.id == token.get("id")))
     seller = result.scalars().first()
@@ -44,7 +41,6 @@ async def get_current_seller_from_token(db: AsyncSession, token: str = Depends(g
         raise HTTPException(status_code=403, detail="Seller not found")
     return seller
 
-# Обновить статус заказа продавца
 @router.put("/{seller_id}/orders/{order_id}/status", response_model=OrderStatusUpdate)
 async def update_order_status_of_seller(
     seller_id: str,

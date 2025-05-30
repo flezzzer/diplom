@@ -15,9 +15,9 @@ class ReviewUpdate(ReviewBase):
     review_text: Optional[str] = None
 
 class ReviewInDB(ReviewBase):
-    id: UUID  # Используем UUID для id
-    user_id: UUID  # Используем UUID для user_id
-    product_id: UUID  # Используем UUID для product_id
+    id: UUID
+    user_id: UUID
+    product_id: UUID
     created_at: datetime
 
     class Config:

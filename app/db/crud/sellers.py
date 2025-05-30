@@ -5,7 +5,6 @@ from app.security import hash_password, verify_password
 from app.schemas.sellers import SellerCreate, SellerUpdate, SellerLogin
 import uuid
 
-# Создание нового продавца
 async def create_seller(db: AsyncSession, seller: SellerCreate):
     hashed_password = hash_password(seller.password)  # Хэшируем пароль перед сохранением
     db_seller = Seller(
@@ -21,7 +20,6 @@ async def create_seller(db: AsyncSession, seller: SellerCreate):
     await db.refresh(db_seller)
     return db_seller
 
-# Функция для аутентификации продавца (проверка логина и пароля)
 async def authenticate_seller(db: AsyncSession, seller: SellerLogin):
     result = await db.execute(select(Seller).filter(Seller.email == seller.email))
     db_seller = result.scalars().first()
@@ -29,22 +27,18 @@ async def authenticate_seller(db: AsyncSession, seller: SellerLogin):
         return None
     return db_seller
 
-# Получение продавца по id
 async def get_seller(db: AsyncSession, seller_id: uuid.UUID):
     result = await db.execute(select(Seller).filter(Seller.id == seller_id))
     return result.scalars().first()
 
-# Получение продавца по email
 async def get_seller_by_email(db: AsyncSession, email: str):
     result = await db.execute(select(Seller).filter(Seller.email == email))
     return result.scalars().first()
 
-# Получение всех продавцов
 async def get_sellers(db: AsyncSession, skip: int = 0, limit: int = 100):
     result = await db.execute(select(Seller).offset(skip).limit(limit))
     return result.scalars().all()
 
-# Обновление данных продавца
 async def update_seller(db: AsyncSession, seller_id: uuid.UUID, seller: SellerUpdate):
     result = await db.execute(select(Seller).filter(Seller.id == seller_id))
     db_seller = result.scalars().first()
@@ -61,7 +55,6 @@ async def update_seller(db: AsyncSession, seller_id: uuid.UUID, seller: SellerUp
         await db.refresh(db_seller)
     return db_seller
 
-# Удаление продавца
 async def delete_seller(db: AsyncSession, seller_id: uuid.UUID):
     result = await db.execute(select(Seller).filter(Seller.id == seller_id))
     db_seller = result.scalars().first()

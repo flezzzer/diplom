@@ -3,13 +3,13 @@ from datetime import datetime
 from uuid import UUID
 
 class CartBase(BaseModel):
-    pass  # Больше ничего здесь не нужно
+    pass
 
 class CartCreate(CartBase):
     pass
 
 class CartUpdate(CartBase):
-    pass  # Можно расширить, если будет нужно
+    pass
 
 class CartInDB(BaseModel):
     id: UUID  # Используем UUID вместо строки

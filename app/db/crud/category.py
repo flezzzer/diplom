@@ -9,24 +9,21 @@ async def create_category(db: AsyncSession, category: CategoryCreate, seller_id:
     db_category = Category(
         name=category.name,
         description=category.description,
-        seller_id=seller_id  # Привязка категории к продавцу
+        seller_id=seller_id
     )
     db.add(db_category)
     await db.commit()
     await db.refresh(db_category)
     return db_category
 
-# Получение категории по id
 async def get_category(db: AsyncSession, category_id: str):
     result = await db.execute(select(Category).filter(Category.id == category_id))
     return result.scalars().first()
 
-# Получение всех категорий
 async def get_categories(db: AsyncSession, skip: int = 0, limit: int = 100):
     result = await db.execute(select(Category).offset(skip).limit(limit))
     return result.scalars().all()
 
-# Обновление категории
 async def update_category(db: AsyncSession, category_id: str, category: CategoryUpdate, seller_id: str):
     result = await db.execute(select(Category).filter(Category.id == category_id, Category.seller_id == seller_id))
     db_category = result.scalars().first()
@@ -39,7 +36,6 @@ async def update_category(db: AsyncSession, category_id: str, category: Category
         await db.refresh(db_category)
     return db_category
 
-# Удаление категории
 async def delete_category(db: AsyncSession, category_id: str, seller_id: str):
     result = await db.execute(select(Category).filter(Category.id == category_id, Category.seller_id == seller_id))
     db_category = result.scalars().first()

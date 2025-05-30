@@ -11,18 +11,17 @@ class OrderStatus(str, Enum):
 
 class OrderBase(BaseModel):
     status: Optional[OrderStatus] = OrderStatus.PENDING
-    total_amount: Optional[float] = None  # Вычисляется на основе корзины
+    total_amount: Optional[float] = None
 
 class OrderCreate(BaseModel):
-    # Поля явно от пользователя не требуются
     pass
 
 class OrderUpdate(BaseModel):
     status: Optional[OrderStatus] = None
 
 class OrderInDB(OrderBase):
-    id: UUID  # Используем UUID для id
-    user_id: UUID  # Используем UUID для user_id
+    id: UUID
+    user_id: UUID
     created_at: datetime
     updated_at: datetime
 
@@ -33,6 +32,6 @@ class OrderOut(OrderInDB):
     pass
 
 class OrderStatusUpdate(BaseModel):
-    order_id: UUID  # Используем UUID для order_id
+    order_id: UUID
     status: OrderStatus
     message: str

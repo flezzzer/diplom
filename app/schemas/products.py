@@ -8,7 +8,7 @@ class ProductBase(BaseModel):
     description: Optional[str] = None
     price: float
     stock: Optional[int] = 0
-    category_id: UUID  # Используем UUID для category_id
+    category_id: UUID
 
 class ProductCreate(ProductBase):
     pass
@@ -18,14 +18,14 @@ class ProductUpdate(ProductBase):
     description: Optional[str] = None
     price: Optional[float] = None
     stock: Optional[int] = None
-    category_id: Optional[UUID] = None  # Используем UUID для category_id
+    category_id: Optional[UUID] = None
 
 class ProductInDB(ProductBase):
-    id: UUID  # Используем UUID для id
+    id: UUID
     created_at: datetime
 
     class Config:
-        orm_mode = True  # Для работы с SQLAlchemy моделями
+        orm_mode = True
 
 class ProductOut(ProductInDB):
     pass

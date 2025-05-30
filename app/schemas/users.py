@@ -18,11 +18,11 @@ class UserUpdate(UserBase):
     is_active: Optional[bool] = True
 
 class UserInDB(UserBase):
-    id: uuid.UUID  # Используем UUID для ID
+    id: uuid.UUID
     created_at: datetime
 
     class Config:
-        orm_mode = True  # Для работы с SQLAlchemy моделями
+        orm_mode = True
 
 class CategoryOut(UserInDB):
     pass
@@ -31,7 +31,6 @@ class CategoryOut(UserInDB):
 class UserLogOut(UserBase):
     pass
 
-# Вход пользователя
 class UserLogin(BaseModel):
     email: EmailStr
     password: str

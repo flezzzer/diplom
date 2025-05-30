@@ -2,8 +2,7 @@ import clickhouse_connect
 import logging
 import os
 
-# Параметры подключения к ClickHouse из переменных окружения
-CLICKHOUSE_HOST = os.getenv("CLICKHOUSE_HOST", "clickhouse")  # Заменил localhost на имя контейнера
+CLICKHOUSE_HOST = os.getenv("CLICKHOUSE_HOST", "clickhouse")
 CLICKHOUSE_PORT = os.getenv("CLICKHOUSE_PORT", "8123")
 CLICKHOUSE_USER = os.getenv("CLICKHOUSE_USER", "default")
 CLICKHOUSE_PASSWORD = os.getenv("CLICKHOUSE_PASSWORD", "")
@@ -25,7 +24,6 @@ def get_clickhouse_client():
     return client
 
 
-# Инициализация базы данных ClickHouse
 def init_db():
     """
     Инициализирует ClickHouse: создает базу данных и таблицы, если их нет.
@@ -34,7 +32,6 @@ def init_db():
         import logging
         import clickhouse_connect
 
-        # Подключаемся к ClickHouse без указания базы данных для инициализации
         client = clickhouse_connect.get_client(
             host=CLICKHOUSE_HOST,
             port=CLICKHOUSE_PORT,
@@ -42,11 +39,9 @@ def init_db():
             password=CLICKHOUSE_PASSWORD
         )
 
-        # Создаем базу данных, если её нет
         client.command(f"CREATE DATABASE IF NOT EXISTS {CLICKHOUSE_DATABASE}")
         client.command(f"USE {CLICKHOUSE_DATABASE}")
 
-        # Таблица users
         client.command("""
         CREATE TABLE IF NOT EXISTS users (
             id String,
@@ -59,7 +54,6 @@ def init_db():
         ORDER BY id;
         """)
 
-        # Таблица categories
         client.command("""
         CREATE TABLE IF NOT EXISTS categories (
             id String,
@@ -71,7 +65,6 @@ def init_db():
         ORDER BY id;
         """)
 
-        # Таблица products
         client.command("""
         CREATE TABLE IF NOT EXISTS products (
             id String,
@@ -86,7 +79,6 @@ def init_db():
         ORDER BY id;
         """)
 
-        # Таблица sellers
         client.command("""
         CREATE TABLE IF NOT EXISTS sellers (
             id String,
@@ -101,7 +93,6 @@ def init_db():
         ORDER BY id;
         """)
 
-        # Таблица carts
         client.command("""
         CREATE TABLE IF NOT EXISTS carts (
             id String,
@@ -111,7 +102,6 @@ def init_db():
         ORDER BY id;
         """)
 
-        # Таблица cart_products
         client.command("""
         CREATE TABLE IF NOT EXISTS cart_products (
             id String,
@@ -124,7 +114,6 @@ def init_db():
         ORDER BY id;
         """)
 
-        # Таблица orders
         client.command("""
         CREATE TABLE IF NOT EXISTS orders (
             id String,
@@ -136,7 +125,6 @@ def init_db():
         ORDER BY id;
         """)
 
-        # Таблица order_items
         client.command("""
         CREATE TABLE IF NOT EXISTS order_items (
             id String,
@@ -149,7 +137,6 @@ def init_db():
         ORDER BY id;
         """)
 
-        # Таблица reviews
         client.command("""
         CREATE TABLE IF NOT EXISTS reviews (
             id String,
@@ -171,7 +158,6 @@ def init_db():
 
 
 
-# Функция для получения сессии ClickHouse
 def get_clickhouse_session():
     """
     Функция для получения синхронной сессии для работы с ClickHouse.
@@ -180,4 +166,4 @@ def get_clickhouse_session():
         client = get_clickhouse_client()
         yield client
     finally:
-        pass  # Пока не нужно закрывать сессию для clickhouse_connect
+        pass

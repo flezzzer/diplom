@@ -9,17 +9,13 @@ import asyncio
 from sqlalchemy import text
 from asgiref.sync import sync_to_async
 
-# Настройка логгера
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Асинхронная задача для синхронизации данных между PostgreSQL и ClickHouse
 @celery.task
 def sync_postgres_to_clickhouse():
     """Задача для синхронизации данных между PostgreSQL и ClickHouse."""
-    # Время последней синхронизации (например, 5 минут назад)
-    last_sync_time = datetime.utcnow() - timedelta(minutes=5)
+    last_sync_time = datetime.utcnow() - timedelta(minutes=1)
 
-    # Получаем асинхронную сессию PostgreSQL
     loop = asyncio.get_event_loop()
     loop.run_until_complete(sync_data(last_sync_time))
 
@@ -48,9 +44,9 @@ def clean_data(data):
         for column, value in row._mapping.items():
             if value is None:
                 cleaned_row[column] = ''
-            elif isinstance(value, uuid.UUID):  # Если значение — это объект UUID
+            elif isinstance(value, uuid.UUID):
                 cleaned_row[column] = str(value)
-            elif column == 'price' or column == 'total_price':  # Если столбец "price"
+            elif column == 'price' or column == 'total_price':
                 cleaned_row[column] = float(value) if value is not None else 0.0
             else:
                 cleaned_row[column] = value
@@ -62,7 +58,6 @@ def clean_data(data):
 async def sync_data(last_sync_time):
     """Асинхронная функция для синхронизации данных с PostgreSQL в ClickHouse."""
     try:
-        # Получаем сессию PostgreSQL через асинхронный контекстный менеджер
         async for session in get_pg_session():  # используем async for
             tables = [
                 'cart_products',
@@ -79,7 +74,6 @@ async def sync_data(last_sync_time):
             for table in tables:
                 logging.info(f"Обрабатываем таблицу {table}.")
 
-                # Запрос для получения данных за последние 5 минут
                 query = text(f"""
                 SELECT * FROM {table}
                 WHERE updated_at >= :last_sync_time
@@ -88,10 +82,8 @@ async def sync_data(last_sync_time):
                 data = result.fetchall()
 
                 if data:
-                    # Получаем клиент ClickHouse
                     clickhouse_client = get_clickhouse_client()
 
-                    # Вставляем данные в ClickHouse
                     data = clean_data(data)
 
                     insert_query = f"INSERT INTO {table} VALUES"
